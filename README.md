@@ -42,3 +42,22 @@ variables:
     Default memory cache size. I've no real clue what this should be, but RAM
     is plentiful so I like to keep it fairly large.
     
+# Example Usage
+The following command line will get you up and running quickly. It presumes
+you've generated a suitable CA certificate and are intending to use the proxy
+as a local MITM on your machine:
+```
+sudo mkdir -p /srv/squid/cache
+docker run -it -p 3128:127.0.0.1:3128 --rm \
+    -v /srv/squid/cache:/var/cache/squid4 \
+    -v /etc/ssl/certs:/etc/ssl/certs:ro \ 
+    -v /etc/ssl/private/local_mitm.pem:/local-mitm.pem:ro \
+    -v /etc/ssl/certs/local_mitm.pem:/local-mitm.crt:ro \
+    -e MITM_CERT=/local-mitm.crt \
+    -e MITM_KEY=/local-mitm.pem \
+    -e MITM_PROXY=yes \
+    squid
+```
+
+Note that it doesn't really matter where we mount the certificate - the image
+launch script makes a copy as root to avoid messing with permissions anyway.
