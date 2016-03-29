@@ -41,6 +41,11 @@ variables:
     Default: `"128 MB"`
     Default memory cache size. I've no real clue what this should be, but RAM
     is plentiful so I like to keep it fairly large.
+ * `CACHE_PEERx`
+   Cache peers for the squid instance may be specified with multiple CACHE_PEER
+   environment variables. The suffix of each is used to determine ordering by
+   the unix `sort` function.
+
     
 # Example Usage
 The following command line will get you up and running quickly. It presumes
