@@ -45,5 +45,13 @@ chown -R proxy: /var/lib/ssl_db
 # Set the configuration
 p2 -t /squid.conf.p2 > /etc/squid4/squid.conf
 
+# Parse the cache peer lines from the environment and add them to the
+# configuration
+echo '# CACHE PEERS FROM DOCKER' >> /etc/squid4/squid.conf
+env | grep 'CACHE_PEER' | sort | while read cacheline; do
+    echo "# $cacheline " >> /etc/squid4/squid.conf
+    echo "cache_peer ${!cacheline}" >> /etc/squid4/squid.conf
+done
+
 squid -z -N
 squid -N
