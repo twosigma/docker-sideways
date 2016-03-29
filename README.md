@@ -61,3 +61,30 @@ docker run -it -p 3128:127.0.0.1:3128 --rm \
 
 Note that it doesn't really matter where we mount the certificate - the image
 launch script makes a copy as root to avoid messing with permissions anyway.
+
+## Unit File for systemd
+This is an example of a systemd unit file to persistly start squid4:
+```
+[Unit]
+Description=Squid4 Docker Container
+Documentation=http://wiki.squid.org
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+ExecStartPre=-/usr/bin/docker kill squid4
+ExecStartPre=-/usr/bin/docker rm squid4
+ExecStart=/usr/bin/docker run --net=host --rm \
+    -v /srv/squid/cache:/var/cache/squid4 \
+    -v /etc/ssl/certs:/etc/ssl/certs:ro \
+    -v /etc/ssl/private/local_mitm.pem:/local_mitm.pem:ro \
+    -v /etc/ssl/certs/local_mitm.pem:/local_mitm.crt:ro \
+    -e MITM_KEY=/local_mitm.pem \
+    -e MITM_CERT=/local_mitm.crt \
+    -e MITM_PROXY=yes \
+    --name squid4 \
+    squid
+
+[Install]
+WantedBy=multi-user.target
+```
