@@ -45,7 +45,14 @@ variables:
    Cache peers for the squid instance may be specified with multiple CACHE_PEER
    environment variables. The suffix of each is used to determine ordering by
    the unix `sort` function.
-
+ * `EXTRA_CONFIGx`
+   Extra non-specific configuration lines to be appended after the main body of
+   the configuration file. This is a good place for custom ACL parameters.
+ * `CONFIG_DISABLE`
+   Default `no`
+   If set to `yes` then squid configuration templating is disabled entirely, allowing
+   bind mounting the configuration file in manually instead. The certificate and SSL
+   setup still runs normally.
     
 # Example Usage
 The following command line will get you up and running quickly. It presumes

@@ -43,15 +43,31 @@ chown -R proxy: /var/lib/ssl_db
 #ssl_db
 
 # Set the configuration
-p2 -t /squid.conf.p2 > /etc/squid4/squid.conf
+if [ "$CONFIG_DISABLE" != "yes" ]; then
+    p2 -t /squid.conf.p2 > /etc/squid4/squid.conf
 
-# Parse the cache peer lines from the environment and add them to the
-# configuration
-echo '# CACHE PEERS FROM DOCKER' >> /etc/squid4/squid.conf
-env | grep 'CACHE_PEER' | sort | while read cacheline; do
-    echo "# $cacheline " >> /etc/squid4/squid.conf
-    echo "cache_peer ${!cacheline}" >> /etc/squid4/squid.conf
-done
+    # Parse the cache peer lines from the environment and add them to the
+    # configuration
+    echo '# CACHE PEERS FROM DOCKER' >> /etc/squid4/squid.conf
+    env | grep 'CACHE_PEER' | sort | while read cacheline; do
+        echo "# $cacheline " >> /etc/squid4/squid.conf
+        echo "cache_peer ${!cacheline}" >> /etc/squid4/squid.conf
+    done
+
+    # Parse the extra config lines and append them to the configuration
+    echo '# EXTRA CONFIG FROM DOCKER' >> /etc/squid4/squid.conf
+    env | grep 'EXTRA_CONFIG' | sort | while read extraline; do
+        echo "# $extraline " >> /etc/squid4/squid.conf
+        echo "${!extraline}" >> /etc/squid4/squid.conf
+    done
+else
+    echo "CONFIGURATION TEMPLATING IS DISABLED."
+fi
+
+if [ ! -e /etc/squid4/squid.conf ]; then
+    echo "ERROR: /etc/squid4/squid.conf does not exist. Squid will not work."
+    exit 1
+fi
 
 squid -z -N
 squid -N
