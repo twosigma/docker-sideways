@@ -77,9 +77,9 @@ others above, `CONFIG_DISABLE` prevents overwriting templated files.
     determines the order in which they are templated into the configuration file.
     The format is a space separated string like "http 127.0.0.1 3129"
  * `PROXYCHAIN_TYPE`
-    Default `strict-chain`. Can be `strict-chain` or `dynamic-chain` sensibly
-    within this image. In `strict-chain` mode, all proxies must be up. In
-    `dynamic-chain` mode proxies are used in order, but skipped if down.
+    Default `strict_chain`. Can be `strict_chain` or `dynamic_chain` sensibly
+    within this image. In `strict_chain` mode, all proxies must be up. In
+    `dynamic_chain` mode proxies are used in order, but skipped if down.
     Disable configuration and bind a configuration file to /etc/proxychains.conf
     if you need more flexibility.
   

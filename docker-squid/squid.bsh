@@ -77,7 +77,7 @@ if [ "$PROXYCHAIN" = "yes" ] && [ "$CONFIG_DISABLE" != "yes" ]; then
     if [ ! -z "$PROXYCHAIN_TYPE" ]; then
         echo "$PROXYCHAIN_TYPE" >> /etc/proxychains.conf
     else
-        echo "strict-chain" >> /etc/proxychains.conf
+        echo "strict_chain" >> /etc/proxychains.conf
     fi
     echo "[ProxyList]" >> /etc/proxychains.conf
     env | grep 'PROXYCHAIN_PROXY' | sort | while read proxyline; do
