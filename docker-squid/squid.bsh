@@ -15,21 +15,23 @@ fi
 chown -R proxy: /var/cache/squid4
 chmod -R 750 /var/cache/squid4
 
-if [ ! -z $MITM_KEY ]; then
-    echo "Copying $MITM_KEY as MITM key..."
-    cp $MITM_KEY /etc/squid4/ssl_cert/mitm.pem
-    chown root:proxy /etc/squid4/ssl_cert/mitm.pem
-fi
+if [ ! -z $MITM_PROXY ]; then
+    if [ ! -z $MITM_KEY ]; then
+        echo "Copying $MITM_KEY as MITM key..."
+        cp $MITM_KEY /etc/squid4/ssl_cert/mitm.pem
+        chown root:proxy /etc/squid4/ssl_cert/mitm.pem
+    fi
 
-if [ ! -z $MITM_CERT ]; then
-    echo "Copying $MITM_CERT as MITM CA..."
-    cp $MITM_CERT /etc/squid4/ssl_cert/mitm.crt
-    chown root:proxy /etc/squid4/ssl_cert/mitm.crt
-fi
+    if [ ! -z $MITM_CERT ]; then
+        echo "Copying $MITM_CERT as MITM CA..."
+        cp $MITM_CERT /etc/squid4/ssl_cert/mitm.crt
+        chown root:proxy /etc/squid4/ssl_cert/mitm.crt
+    fi
 
-if [ -z $MITM_CERT ] || [ -z $MITM_KEY ]; then
-    echo "Must specify $MITM_CERT AND $MITM_KEY." 1>&2
-    exit 1
+    if [ -z $MITM_CERT ] || [ -z $MITM_KEY ]; then
+        echo "Must specify $MITM_CERT AND $MITM_KEY." 1>&2
+        exit 1
+    fi
 fi
 
 chown proxy: /dev/stdout
@@ -74,11 +76,17 @@ fi
 # If proxychains is requested and config templating is active
 if [ "$PROXYCHAIN" = "yes" ] && [ "$CONFIG_DISABLE" != "yes" ]; then
     echo "# PROXYCHAIN CONFIG FROM DOCKER" > /etc/proxychains.conf
+    # Enable remote DNS proxy
+    if [ ! -z "$PROXYCHAIN_DNS" ]; then
+        echo "proxy_dns" >> /etc/proxychains.conf
+    fi
+    # Configure proxy type
     if [ ! -z "$PROXYCHAIN_TYPE" ]; then
         echo "$PROXYCHAIN_TYPE" >> /etc/proxychains.conf
     else
         echo "strict_chain" >> /etc/proxychains.conf
     fi
+    
     echo "[ProxyList]" >> /etc/proxychains.conf
     env | grep 'PROXYCHAIN_PROXY' | sort | while read proxyline; do
         echo "# $proxyline " >> /etc/squid4/squid.conf
