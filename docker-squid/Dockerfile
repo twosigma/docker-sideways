@@ -57,6 +57,17 @@ RUN wget -O /usr/local/bin/p2 \
     https://github.com/wrouesnel/p2cli/releases/download/r1/p2 && \
     chmod +x /usr/local/bin/p2
 
+# Clone and build proxychains-ng for SSL upstream proxying
+ARG PROXYCHAINS_COMMITTISH=aea917265349880f6cc5dffc9d4afa61227fd330
+
+RUN apt-get install -y git
+
+RUN git clone https://github.com/rofl0r/proxychains-ng.git /src/proxychains-ng && \
+    cd /src/proxychains-ng && \
+    git checkout $PROXYCHAINS_COMMITTISH && \
+    ./configure --prefix=/usr --sysconfdir=/etc && \
+    make -j$CONCURRENCY && make install
+
 COPY squid.conf.p2 /squid.conf.p2
 COPY squid.bsh /squid.bsh
 

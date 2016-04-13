@@ -53,7 +53,36 @@ variables:
    If set to `yes` then squid configuration templating is disabled entirely, allowing
    bind mounting the configuration file in manually instead. The certificate and SSL
    setup still runs normally.
-    
+
+# Proxychains
+By default squid in SSL MITM mode treats `cache_peer` entries quite differently.
+Because squid unwraps the CONNECT statement when bumping an SSL connection, but
+does not rewrap it when communicating with peers, it requires all peers to connect
+with SSL as well. This breaks compatibility with simple minded proxies.
+
+To work around this, proxychains-ng (`proxychains4` internally) is built and
+included in this image. If you need to use an upstream proxy with a MITM
+squid4, you should launch the image in proxychains mode which intercepts squids
+direct outbound connections and redirects them via CONNECT requests. This also
+adds SOCKS4 and SOCKS5 proxy support if so desired.
+
+proxychains is configured with the following environment variables. As with the
+others above, `CONFIG_DISABLE` prevents overwriting templated files.
+
+ * `PROXYCHAIN`
+    Default none. If set to `yes` then squid will be launched with proxychains.
+    You should specify some proxies when doing this.
+ * `PROXYCHAIN_PROXYx`
+    Upstream proxies to be passed to the proxy chan config file. The suffix (`x`)
+    determines the order in which they are templated into the configuration file.
+    The format is a space separated string like "http 127.0.0.1 3129"
+ * `PROXYCHAIN_TYPE`
+    Default `strict-chain`. Can be `strict-chain` or `dynamic-chain` sensibly
+    within this image. In `strict-chain` mode, all proxies must be up. In
+    `dynamic-chain` mode proxies are used in order, but skipped if down.
+    Disable configuration and bind a configuration file to /etc/proxychains.conf
+    if you need more flexibility.
+  
 # Example Usage
 The following command line will get you up and running quickly. It presumes
 you've generated a suitable CA certificate and are intending to use the proxy

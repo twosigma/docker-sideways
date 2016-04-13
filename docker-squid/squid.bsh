@@ -63,7 +63,7 @@ if [ "$CONFIG_DISABLE" != "yes" ]; then
         echo "$line" >> /etc/squid4/squid.conf
     done
 else
-    echo "CONFIGURATION TEMPLATING IS DISABLED."
+    echo "/etc/squid4/squid.conf: CONFIGURATION TEMPLATING IS DISABLED."
 fi
 
 if [ ! -e /etc/squid4/squid.conf ]; then
@@ -71,5 +71,35 @@ if [ ! -e /etc/squid4/squid.conf ]; then
     exit 1
 fi
 
+# If proxychains is requested and config templating is active
+if [ "$PROXYCHAIN" = "yes" ] && [ "$CONFIG_DISABLE" != "yes" ]; then
+    echo "# PROXYCHAIN CONFIG FROM DOCKER" > /etc/proxychains.conf
+    if [ ! -z "$PROXYCHAIN_TYPE" ]; then
+        echo "$PROXYCHAIN_TYPE" >> /etc/proxychains.conf
+    else
+        echo "strict-chain" >> /etc/proxychains.conf
+    fi
+    echo "[ProxyList]" >> /etc/proxychains.conf
+    env | grep 'PROXYCHAIN_PROXY' | sort | while read proxyline; do
+        echo "# $proxyline " >> /etc/squid4/squid.conf
+        line=$(echo $proxyline | cut -d'=' -f2-)
+        echo "$line" >> /etc/proxychains.conf
+    done
+else
+    echo "/etc/proxychains.conf : CONFIGURATION TEMPLATING IS DISABLED"
+fi
+
+# Build the configuration directories if needed
 squid -z -N
-squid -N
+
+if [ "$PROXYCHAIN" = "yes" ]; then
+    if [ ! -e /etc/proxychains.conf ]; then
+        echo "ERROR: /etc/proxychains.conf does not exist. Squid with proxychains will not work."
+        exit 1
+    fi 
+    # Start squid with proxychains
+    proxychains4 squid -N
+else
+    # Start squid normally
+    squid -N
+fi
