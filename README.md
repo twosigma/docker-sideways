@@ -82,6 +82,8 @@ others above, `CONFIG_DISABLE` prevents overwriting templated files.
     `dynamic_chain` mode proxies are used in order, but skipped if down.
     Disable configuration and bind a configuration file to /etc/proxychains.conf
     if you need more flexibility.
+ * `PROXYCHAIN_DNS`
+   Default none. When set to `yes`, turns on the `proxy_dns` option for Proxychains.
   
 # Example Usage
 The following command line will get you up and running quickly. It presumes
