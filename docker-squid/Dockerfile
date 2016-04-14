@@ -4,12 +4,16 @@ RUN sed s:deb:deb-src: /etc/apt/sources.list >> /etc/apt/sources.list
 
 RUN apt-get update && apt-get build-dep -y squid3 && apt-get install -y wget tar xz-utils libssl-dev
 
+ARG SQUID_VERSION=4.0.8
+
+# TODO: verify the squid download with the signing key
 RUN mkdir /src \
     && cd /src \
-    && wget http://www.squid-cache.org/Versions/v4/squid-4.0.7.tar.xz \
-    && tar -xvvf squid-4.0.7.tar.xz
+    && wget http://www.squid-cache.org/Versions/v4/squid-$SQUID_VERSION.tar.xz \
+    && mkdir squid \
+    && tar -C squid --strip-components=1 -xvf squid-$SQUID_VERSION.tar.xz
     
-RUN cd /src/squid-4.0.7 && \
+RUN cd /src/squid && \
     ./configure \
         --prefix=/usr \
         --datadir=/usr/share/squid4 \
@@ -48,7 +52,7 @@ RUN cd /src/squid-4.0.7 && \
 		
 ARG CONCURRENCY=1
 
-RUN cd /src/squid-4.0.7 && \
+RUN cd /src/squid && \
     make -j$CONCURRENCY && \
     make install
 
