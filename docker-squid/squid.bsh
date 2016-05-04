@@ -38,8 +38,8 @@ chown proxy: /dev/stdout
 chown proxy: /dev/stderr
 
 # Initialize the certificates database
-/usr/libexec/security_file_certgen -c -s /var/lib/ssl_db
-chown -R proxy: /var/lib/ssl_db
+/usr/libexec/security_file_certgen -c -s /var/spool/squid4/ssl_db
+chown -R proxy: /var/spool/squid4/ssl_db
 
 #ssl_crtd -c -s
 #ssl_db
