@@ -106,8 +106,8 @@ if [ "$PROXYCHAIN" = "yes" ]; then
         exit 1
     fi 
     # Start squid with proxychains
-    proxychains4 squid -N
+    exec proxychains4 squid -N
 else
     # Start squid normally
-    squid -N
+    exec squid -N
 fi
