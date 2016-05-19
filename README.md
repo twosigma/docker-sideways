@@ -53,6 +53,10 @@ variables:
    If set to `yes` then squid configuration templating is disabled entirely, allowing
    bind mounting the configuration file in manually instead. The certificate and SSL
    setup still runs normally.
+ * `DISABLE_CACHE`
+   Default ``
+   If set to `yes` then squid configuration templating removes all `cache_dir`
+   lines, setting squid to memory only cache.
 
 # Proxychains
 By default squid in SSL MITM mode treats `cache_peer` entries quite differently.
