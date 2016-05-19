@@ -10,8 +10,10 @@ netdb_filename stdio:/var/cache/squid4/netdb.state
 # Visible hostname to allow multi-squid
 visible_hostname {{VISIBLE_HOSTNAME|default:"docker-squid4"}}
 
+{% if DISABLE_CACHE|default:"" != "yes" %}
 # Cache directory is fixed since we'll bind mount.
 cache_dir aufs /var/cache/squid4 {{MAX_CACHE_SIZE|default:"40000"}} 16 256
+{% endif %}
 
 maximum_object_size {{MAX_OBJECT_SIZE|default:"1536 MB"}}
 cache_mem {{MEM_CACHE_SIZE|default:"128 MB"}}
