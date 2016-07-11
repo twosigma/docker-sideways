@@ -1,6 +1,6 @@
 # Squid4 with SSL proxying
 
-This dockerfile builds a Squid 4.0.7 instance and includes all the necessary
+This dockerfile builds a Squid 4 instance and includes all the necessary
 tooling to run it as a MITM (man-in-the-middle) SSL proxy.
 
 There's a number of reasons to do this - the big one being optimizing caching
