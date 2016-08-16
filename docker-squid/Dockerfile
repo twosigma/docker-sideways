@@ -4,7 +4,7 @@ RUN sed s:deb:deb-src: /etc/apt/sources.list >> /etc/apt/sources.list
 
 RUN apt-get update && apt-get build-dep -y squid3 && apt-get install -y wget tar xz-utils libssl-dev
 
-ARG SQUID_VERSION=4.0.12
+ARG SQUID_VERSION=4.0.13
 
 # TODO: verify the squid download with the signing key
 RUN mkdir /src \
@@ -48,7 +48,8 @@ RUN cd /src/squid && \
 		--with-pidfile=/var/run/squid4.pid \
 		--with-filedescriptors=65536 \
 		--with-large-files \
-		--with-default-user=proxy
+		--with-default-user=proxy \
+        	--disable-arch-native
 		
 ARG CONCURRENCY=1
 
