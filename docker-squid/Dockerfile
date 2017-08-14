@@ -1,8 +1,6 @@
-FROM debian:jessie
+FROM ubuntu:zesty
 
-RUN sed s:deb:deb-src: /etc/apt/sources.list >> /etc/apt/sources.list
-
-RUN apt-get update && apt-get build-dep -y squid3 && apt-get install -y wget tar xz-utils libssl-dev
+RUN apt-get update && apt-get build-dep -y squid && apt-get install -y wget tar xz-utils libssl-dev
 
 ARG SQUID_VERSION=4.0.21
 
