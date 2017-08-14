@@ -106,8 +106,16 @@ if [ "$PROXYCHAIN" = "yes" ]; then
         exit 1
     fi 
     # Start squid with proxychains
-    exec proxychains4 squid -N
+    proxychains4 squid -N &
+    PID=$!
 else
     # Start squid normally
-    exec squid -N
+    squid -N &
+    PID=$!
 fi
+
+# This construct allows signals to kill the container successfully.
+trap "kill -TERM $PID" INT TERM
+wait $PID
+wait $PID
+exit $?

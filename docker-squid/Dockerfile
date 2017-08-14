@@ -4,7 +4,7 @@ RUN sed s:deb:deb-src: /etc/apt/sources.list >> /etc/apt/sources.list
 
 RUN apt-get update && apt-get build-dep -y squid3 && apt-get install -y wget tar xz-utils libssl-dev
 
-ARG SQUID_VERSION=4.0.13
+ARG SQUID_VERSION=4.0.21
 
 # TODO: verify the squid download with the signing key
 RUN mkdir /src \
