@@ -1,6 +1,14 @@
 FROM ubuntu:zesty
 
-RUN apt-get update && apt-get build-dep -y squid && apt-get install -y wget tar xz-utils libssl-dev
+# Normalize apt sources
+RUN cat /etc/apt/sources.list | grep -v '^#' | sed /^$/d | sort | uniq > sources.tmp.1 && \
+    cat /etc/apt/sources.list | sed s/deb\ /deb-src\ /g | grep -v '^#' | sed /^$/d | sort | uniq > sources.tmp.2 && \
+    cat sources.tmp.1 sources.tmp.2 > /etc/apt/sources.list && \
+    rm -f sources.tmp.1 sources.tmp.2
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get build-dep -y squid && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y wget tar xz-utils libssl-dev
 
 ARG SQUID_VERSION=4.0.21
 
