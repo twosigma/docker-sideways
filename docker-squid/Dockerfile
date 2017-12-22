@@ -71,7 +71,7 @@ RUN wget -O /usr/local/bin/p2 \
     chmod +x /usr/local/bin/p2
 
 # Clone and build proxychains-ng for SSL upstream proxying
-ARG PROXYCHAINS_COMMITTISH=aea917265349880f6cc5dffc9d4afa61227fd330
+ARG PROXYCHAINS_COMMITTISH=7a233fb1f05bcbf3d7f5c91658932261de1e13cb
 
 RUN apt-get install -y git
 
