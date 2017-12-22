@@ -1,4 +1,6 @@
-FROM ubuntu:artful
+ARG DOCKER_PREFIX=
+
+FROM ${DOCKER_PREFIX}ubuntu:artful
 
 # Normalize apt sources
 RUN cat /etc/apt/sources.list | grep -v '^#' | sed /^$/d | sort | uniq > sources.tmp.1 && \
