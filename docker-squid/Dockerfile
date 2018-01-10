@@ -2,6 +2,13 @@ ARG DOCKER_PREFIX=
 
 FROM ${DOCKER_PREFIX}ubuntu:artful
 
+ARG TRUST_CERT=
+
+RUN if [ ! -z "$TRUST_CERT" ]; then \
+        echo "$TRUST_CERT" > /usr/local/share/ca-certificates/build-trust.crt ; \
+        update-ca-certificates ; \
+    fi
+
 # Normalize apt sources
 RUN cat /etc/apt/sources.list | grep -v '^#' | sed /^$/d | sort | uniq > sources.tmp.1 && \
     cat /etc/apt/sources.list | sed s/deb\ /deb-src\ /g | grep -v '^#' | sed /^$/d | sort | uniq > sources.tmp.2 && \
@@ -81,11 +88,33 @@ RUN git clone https://github.com/rofl0r/proxychains-ng.git /src/proxychains-ng &
     ./configure --prefix=/usr --sysconfdir=/etc && \
     make -j$CONCURRENCY && make install
 
+ARG URL_DOH=https://github.com/wrouesnel/dns-over-https-proxy/releases/download/v0.0.2/dns-over-https-proxy_v0.0.2_linux-amd64.tar.gz
+
+RUN wget -O /tmp/doh.tgz \
+    $URL_DOH && \
+    tar -xvvf /tmp/doh.tgz --strip-components=1 -C /usr/local/bin/ && \
+    chmod +x /usr/local/bin/dns-over-https-proxy
+
 COPY squid.conf.p2 /squid.conf.p2
 COPY squid.bsh /squid.bsh
 
 # Configuration environment
-ENV HTTP_PORT=3128 ICP_PORT= HTCP_PORT= MITM_PROXY= MITM_CERT= MITM_KEY=  VISIBLE_HOSTNAME=docker-squid4 MAX_CACHE_SIZE=40000 MAX_OBJECT_SIZE="1536 MB" MEM_CACHE_SIZE="128 MB"
+ENV HTTP_PORT=3128 \
+    ICP_PORT= \
+    HTCP_PORT= \
+    MITM_PROXY= \
+    MITM_CERT= \
+    MITM_KEY= \
+    VISIBLE_HOSTNAME=docker-squid4 \
+    MAX_CACHE_SIZE=40000 \
+    MAX_OBJECT_SIZE="1536 MB" \
+    MEM_CACHE_SIZE="128 MB" \
+    DNS_OVER_HTTPS_LISTEN_ADDR="127.0.0.153:53" \
+    DNS_OVER_HTTPS_SERVER="https://dns.google.com/resolve" \
+    DNS_OVER_HTTPS_NO_FALLTHROUGH="" \
+    DNS_OVER_HTTPS_FALLTHROUGH_STATUSES=NXDOMAIN \
+    DNS_OVER_HTTPS_PREFIX_SERVER= \
+    DNS_OVER_HTTPS_SUFFIX_SERVER=
 
 EXPOSE 3128
 

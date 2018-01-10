@@ -88,7 +88,37 @@ others above, `CONFIG_DISABLE` prevents overwriting templated files.
     if you need more flexibility.
  * `PROXYCHAIN_DNS`
    Default none. When set to `yes`, turns on the `proxy_dns` option for Proxychains.
-  
+
+# DNS-over-HTTPS via CoreDNS
+In some corporate environments, its not possible to get reliable DNS outbound
+service and `proxychains-ng`'s DNS support won't be able to provide for Squid4
+to actually work. To address this, configuration is included to setup and use
+CoreDNS as a routing proxy.
+
+The idea of the DNS-over-HTTPS client is that it will use your local proxy and
+network access to provide DNS service to Squid4.
+
+* `DNS_OVER_HTTPS`
+  Default `no`. If `yes` then enables and starts the DNS_OVER_HTTPS service.
+* `DNS_OVER_HTTPS_LISTEN_ADDR`
+  Default `127.0.0.153:53`. Squid doesn't support changing the port, so keep
+  this in mind.
+* `DNS_OVER_HTTPS_SERVER`
+  Default `https://dns.google.com/resolve`. AFAIK there's no other options for
+  this at the moment.
+* `DNS_OVER_HTTPS_NO_PROXY`
+  Default ``. List of DNS suffixes to *not* ever proxy via DNS_OVER_HTTPS.
+* `DNS_OVER_HTTPS_PREFIX_SERVER`
+  Default ``. Normal DNS server to try resolving first against.
+* `DNS_OVER_HTTPS_SUFFIX_SERVER`
+  Default ``. Normal DNS server to try resolving last against.
+
+Since the DNS-over-HTTPS daemon is a separate Go binary, you may also need to
+specify your internal proxy as an upstream to allow it to contact the HTTPS
+DNS server - do this by passing the standard `http_proxy` and `https_proxy`
+parameters. Most likely these will be the same as your `PROXYCHAIN_PROXYx`
+directives (and probably only the 1).
+
 # Example Usage
 The following command line will get you up and running quickly. It presumes
 you've generated a suitable CA certificate and are intending to use the proxy
