@@ -89,11 +89,11 @@ others above, `CONFIG_DISABLE` prevents overwriting templated files.
  * `PROXYCHAIN_DNS`
    Default none. When set to `yes`, turns on the `proxy_dns` option for Proxychains.
 
-# DNS-over-HTTPS via CoreDNS
+# DNS-over-HTTPS
 In some corporate environments, its not possible to get reliable DNS outbound
 service and `proxychains-ng`'s DNS support won't be able to provide for Squid4
 to actually work. To address this, configuration is included to setup and use
-CoreDNS as a routing proxy.
+DNS-over-HTTPS.
 
 The idea of the DNS-over-HTTPS client is that it will use your local proxy and
 network access to provide DNS service to Squid4.
