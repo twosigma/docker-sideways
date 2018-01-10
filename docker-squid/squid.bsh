@@ -68,6 +68,20 @@ else
     echo "/etc/squid4/squid.conf: CONFIGURATION TEMPLATING IS DISABLED."
 fi
 
+if [ "$DNS_OVER_HTTPS" = "yes" ]; then
+    echo "Starting DNS-over-HTTPS proxy..."
+    # TODO: find a way to tie this to the proxychains config
+    dns-over-https-proxy -default "$DNS_OVER_HTTPS_SERVER" \
+        -address "$DNS_OVER_HTTPS_LISTEN_ADDR" \
+        -primary-dns "$DNS_OVER_HTTPS_PREFIX_SERVER" \
+        -fallback-dns "$DNS_OVER_HTTPS_SUFFIX_SERVER" \
+        -no-fallthrough "$(echo $DNS_OVER_HTTPS_NO_FALLTHROUGH | tr -s ' ' ',')" \
+        -fallthrough-statues "$DNS_OVER_HTTPS_FALLTHROUGH_STATUSES"
+        &
+    echo "Adding dns_nameservers line to squid.conf..."
+    echo "dns_nameservers $(echo $DNS_OVER_HTTPS_LISTEN_ADDR | cut -d':' -f1)" >> /etc/squid4/squid.conf
+fi
+
 if [ ! -e /etc/squid4/squid.conf ]; then
     echo "ERROR: /etc/squid4/squid.conf does not exist. Squid will not work."
     exit 1
@@ -106,16 +120,16 @@ if [ "$PROXYCHAIN" = "yes" ]; then
         exit 1
     fi 
     # Start squid with proxychains
-    proxychains4 squid -N &
+    proxychains4 -f /etc/proxychains.conf squid -N 2>&1 &
     PID=$!
 else
     # Start squid normally
-    squid -N &
+    squid -N 2>&1 &
     PID=$!
 fi
 
 # This construct allows signals to kill the container successfully.
-trap "kill -TERM $PID" INT TERM
+trap "kill -TERM $(jobs -p)" INT TERM
 wait $PID
 wait $PID
 exit $?
