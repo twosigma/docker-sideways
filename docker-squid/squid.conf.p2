@@ -44,3 +44,7 @@ htcp_access allow all
 {% endif %}
 
 http_access allow all
+
+{% if INCLUDE_CONFIG_DIR|default:"" != "" %}
+include {{INCLUDE_CONFIG_DIR}}/*
+{% endif %}

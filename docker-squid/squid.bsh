@@ -99,7 +99,7 @@ if [ "$PROXYCHAIN" = "yes" ] && [ "$CONFIG_DISABLE" != "yes" ]; then
     else
         echo "strict_chain" >> /etc/proxychains.conf
     fi
-    
+
     echo "[ProxyList]" >> /etc/proxychains.conf
     env | grep 'PROXYCHAIN_PROXY' | sort | while read proxyline; do
         echo "# $proxyline " >> /etc/squid4/squid.conf
@@ -117,7 +117,7 @@ if [ "$PROXYCHAIN" = "yes" ]; then
     if [ ! -e /etc/proxychains.conf ]; then
         echo "ERROR: /etc/proxychains.conf does not exist. Squid with proxychains will not work."
         exit 1
-    fi 
+    fi
     # Start squid with proxychains
     proxychains4 -f /etc/proxychains.conf squid -N 2>&1 &
     PID=$!
