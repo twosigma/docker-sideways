@@ -129,6 +129,14 @@ fi
 
 # This construct allows signals to kill the container successfully.
 trap "kill -TERM $(jobs -p)" INT TERM
+
+# watch $INCLUDE_CONFIG_DIR and reload squid on changes
+if [ ! -z $INCLUDE_CONFIG_DIR ]; then
+    while inotifywait -q -e modify -e move -e create -e delete $INCLUDE_CONFIG_DIR; do
+        kill -HUP $PID
+    done
+fi
+
 wait $PID
 wait $PID
 exit $?

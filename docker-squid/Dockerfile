@@ -18,7 +18,7 @@ RUN cat /etc/apt/sources.list | grep -v '^#' | sed /^$/d | sort | uniq > sources
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get build-dep -y squid && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y wget tar xz-utils libssl-dev
+    DEBIAN_FRONTEND=noninteractive apt-get install -y wget tar xz-utils libssl-dev inotify-tools
 
 ARG SQUID_VERSION=4.12
 
