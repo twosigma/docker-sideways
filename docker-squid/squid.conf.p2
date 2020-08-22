@@ -2,7 +2,7 @@
 
 # Default all logs to stdout and stderr
 logfile_rotate 0
-access_log stdio:/dev/stdout combined
+access_log stdio:/dev/stdout
 cache_store_log stdio:/dev/stdout
 cache_log /dev/stderr
 netdb_filename stdio:/var/cache/squid4/netdb.state
