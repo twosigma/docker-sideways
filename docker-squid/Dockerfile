@@ -18,7 +18,7 @@ RUN cat /etc/apt/sources.list | grep -v '^#' | sed /^$/d | sort | uniq > sources
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get build-dep -y squid && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y wget tar xz-utils libssl-dev
+    DEBIAN_FRONTEND=noninteractive apt-get install -y wget tar xz-utils libssl-dev inotify-tools
 
 ARG SQUID_VERSION=4.12
 
@@ -28,7 +28,7 @@ RUN mkdir /src \
     && wget http://www.squid-cache.org/Versions/v4/squid-$SQUID_VERSION.tar.xz \
     && mkdir squid \
     && tar -C squid --strip-components=1 -xvf squid-$SQUID_VERSION.tar.xz
-    
+
 RUN cd /src/squid && \
     ./configure \
         --prefix=/usr \
@@ -36,6 +36,7 @@ RUN cd /src/squid && \
 		--sysconfdir=/etc/squid4 \
 		--localstatedir=/var \
 		--mandir=/usr/share/man \
+		--enable-http-violations \
 		--enable-inline \
 		--enable-async-io=8 \
 		--enable-storeio="ufs,aufs,diskd,rock" \
@@ -66,7 +67,7 @@ RUN cd /src/squid && \
 		--with-large-files \
 		--with-default-user=proxy \
         	--disable-arch-native
-		
+
 ARG CONCURRENCY=1
 
 RUN cd /src/squid && \
@@ -106,6 +107,7 @@ ENV HTTP_PORT=3128 \
     MITM_PROXY= \
     MITM_CERT= \
     MITM_KEY= \
+    INCLUDE_CONFIG_DIR= \
     VISIBLE_HOSTNAME=docker-squid4 \
     MAX_CACHE_SIZE=40000 \
     MAX_OBJECT_SIZE="1536 MB" \
