@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: Build-image
+name: Build Squid image
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -22,11 +22,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v1
-        with:
-          username: DOCKER_USERNAME
-          password: DOCKER_PASSWORD
-          repository: twosigma/docker-squid4
-          tags: latest
-          push: false
+#       - name: Login to DockerHub Registry
+#         run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+      - name: Get the version
+        id: vars
+        run: echo ::set-output name=tag::$(echo ${GITHUB_REF:10})
+      - name: Build the tagged Docker image
+        run: |
+          cd docker-squid
+          docker build . --file Dockerfile --tag twosigma/docker-squid4:${{steps.vars.outputs.tag}}
+      - name: Push the tagged Docker image
+        run: docker push twosigma/docker-squid4:${{steps.vars.outputs.tag}}
+      - name: Build the latest Docker image
+        run: docker build . --file Dockerfile --tag twosigma/docker-squid4:latest
+      - name: Push the latest Docker image
+        run: docker push twosigma/docker-squid4:latest
