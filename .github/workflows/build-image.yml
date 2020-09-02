@@ -18,9 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     # Set some variables for the build
     env:
-      IMAGE_NAME: twosigma/docker-squid4
-      DOCKER_USERNAME:  ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKER_PASSWORD:  ${{ secrets.DOCKERHUB_PASSWORD }}
+      IMAGE_NAME: docker.pkg.github.com/twosigma/docker-squid4
       TAG: ${{ github.sha }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -30,9 +28,14 @@ jobs:
 
 #       - name: Login to DockerHub Registry
 #         run: echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
+
+      - name: Login to GitHub Artifact Registry
+        run: cat ~/GH_TOKEN.txt | docker login docker.pkg.github.com -u scottrich --password-stdin
+
       - name: Get the version
         id: vars
         run: echo Building $IMAGE_NAME:$TAG as $DOCKER_USERNAME
+        
       - name: Build the tagged Docker image
         run: |
           cd docker-squid
