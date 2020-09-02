@@ -16,6 +16,12 @@ jobs:
   build:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    # Set some variables for the build
+    env:
+      IMAGE_NAME: twosigma/docker-squid4
+      DOCKER_USERNAME:  ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKER_PASSWORD:  ${{ secrets.DOCKERHUB_PASSWORD }}
+      TAG: ${{ github.sha }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -23,17 +29,17 @@ jobs:
         uses: actions/checkout@v2
 
 #       - name: Login to DockerHub Registry
-#         run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+#         run: echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
       - name: Get the version
         id: vars
-        run: echo ::set-output name=tag::$(echo ${GITHUB_REF:10})
+        run: echo Building $IMAGE_NAME:$TAG as $DOCKER_USERNAME
       - name: Build the tagged Docker image
         run: |
           cd docker-squid
-          docker build . --file Dockerfile --tag twosigma/docker-squid4:${{steps.vars.outputs.tag}}
+          docker build . --file Dockerfile --tag $IMAGE_NAME:$TAG
       - name: Push the tagged Docker image
-        run: docker push twosigma/docker-squid4:${{steps.vars.outputs.tag}}
-      - name: Build the latest Docker image
-        run: docker build . --file Dockerfile --tag twosigma/docker-squid4:latest
+        run: docker push $IMAGE_NAME:$TAG
+      - name: Tag the latest Docker image
+        run: docker build . --file Dockerfile --tag $IMAGE_NAME:latest
       - name: Push the latest Docker image
-        run: docker push twosigma/docker-squid4:latest
+        run: docker push $IMAGE_NAME:latest
