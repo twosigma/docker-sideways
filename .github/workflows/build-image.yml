@@ -37,7 +37,7 @@ jobs:
       - name: Build and tag the Docker image
         run: |
           cd docker-squid
-          docker build . --file Dockerfile --tag $IMAGE_NAME:$TAG --tag $IMAGE_NAME:latest --cache-from $IMAGE_NAME:latest
+          docker build . --file Dockerfile --tag $IMAGE_NAME:$TAG --tag $IMAGE_NAME:latest --cache-from docker.pkg.github.com/twosigma/docker-squid4/docker-squid4:latest
           
       - name: Push the new Docker image
         run: docker push $IMAGE_NAME:$TAG
