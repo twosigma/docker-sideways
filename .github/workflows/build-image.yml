@@ -30,7 +30,7 @@ jobs:
 #         run: echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
 
       - name: Login to GitHub Artifact Registry
-        run: cat ~/GH_TOKEN.txt | docker login docker.pkg.github.com -u scottrich --password-stdin
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u scottrich --password-stdin
 
       - name: Get the version
         id: vars
