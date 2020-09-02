@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     # Set some variables for the build
     env:
-      IMAGE_NAME: docker.pkg.github.com/twosigma/docker-squid4
+      IMAGE_NAME: docker.pkg.github.com/twosigma/docker-squid4/docker-squid4
       TAG: ${{ github.sha }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
