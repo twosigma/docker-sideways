@@ -40,4 +40,7 @@ jobs:
           docker build . --file Dockerfile --tag $IMAGE_NAME:$TAG --tag $IMAGE_NAME:latest --cache-from $IMAGE_NAME:latest
           
       - name: Push the new Docker image
-        run: docker push $IMAGE_NAME:$TAG
+        run: |
+          docker push $IMAGE_NAME:$TAG
+          docker push $IMAGE_NAME:latest
+          
