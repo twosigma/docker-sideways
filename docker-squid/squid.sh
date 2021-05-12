@@ -77,13 +77,28 @@ if [ ! -z "$KEYTAB_SVC_URL" ]; then
 
 	while true; do
 		date >> /var/log/keytab_refresh.log
-		curl --negotiate -u : -s "KEYTAB_SVC_URL" | \
-			jq -r .keytab | base64 -d > \
-			$KRB5_KTNAME 2>> /var/log/keytab_refresh.log
+		token=$(curl -s 'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=iam.twosigma.com&format=full' 2>> $ktlog)
+		echo "Token: $token" >> $ktlog
+		kt=$(mktemp -t keytab.XXXXXX)
+		ktlog=/var/log/keytab_refresh.log
+		curl -v -s -o $kt -H "Authorization: Bearer $token" \
+			"$KEYTAB_SVC_URL" >> $ktlog 2>&1
 		if [ $? -ne 0 ]; then
+			rm $kt
 			sleep 60
 			continue
 		fi
+		cat $kt | jq -r .keytab | base64 -d > \
+			$KRB5_KTNAME 2>> $ktlog
+		if [ $? -ne 0 ]; then
+			echo "** curl result **" >> $ktlog
+			cat $kt >> $ktlog
+			echo "** end curl result **" >> $ktlog
+			rm $kt
+			sleep 60
+			continue
+		fi
+		rm $kt
 		sleep 14400
 	done &
 fi
