@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     # Set some variables for the build
     env:
-      IMAGE_NAME: ghcr.io/twosigma/docker-squid4
+      IMAGE_NAME: ghcr.io/twosigma/docker-sideways
       REGISTRY_USERNAME: scottrich 
       TAG: ${{ github.sha }}
 
