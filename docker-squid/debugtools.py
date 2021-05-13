@@ -51,7 +51,28 @@ class DebugTools(http.server.BaseHTTPRequestHandler):
             self.send_error(403)
             return
 
-        if self.path == '/start_capture':
+        if self.path == '/help':
+            self.send_get_reply(
+                'Available commands:\n'
+                '    /start_capture\n'
+                '        Starts a tcpdump capture\n'
+                '    /stop_capture\n'
+                '        Stops an in-progress tcpdump capture\n'
+                '    /capture.pcap\n'
+                '        Download an existing tcpdump capture\n'
+                '    /netstat_counters\n'
+                '        Displays netstat counters (netstat -s)\n'
+                '    /netstat_tcp\n'
+                '        Displays netstat TCP sessions (netstat -taneo)\n'
+                '    /top\n'
+                '        Displays "top" 1s snapshot\n'
+                '    /keytab\n'
+                '        Displays the "proxy" user\'s keytab and\n'
+                '        keytab pull logs\n'
+                '    /dig?name=<name>&qtype=<query type>\n'
+                '        Performs a DNS query using dig\n'
+            )
+        elif self.path == '/start_capture':
             try:
               os.system('/usr/sbin/tcpdump '
                         '-w /var/log/tcpdump/capture.pcap -c 350000 &')
