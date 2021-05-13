@@ -16,7 +16,7 @@ distinguished_name = dn
 x509_extensions = x509_ext
 [ dn ]
 CN = sideways
-emailAddress = re-proxy-support@twosigma.com
+emailAddress = sideways@sideways.local
 O = Two Sigma Investments, LP
 OU = Two Sigma Investments, LP
 L = New York
