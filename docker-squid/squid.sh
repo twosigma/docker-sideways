@@ -77,7 +77,7 @@ if [ ! -z "$KEYTAB_SVC_URL" ]; then
 
 	while true; do
 		date >> /var/log/keytab_refresh.log
-		token=$(curl -s 'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=iam.twosigma.com&format=full' 2>> $ktlog)
+		token=$(curl -s -H 'Metadata-Flavor: Google' 'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=iam.twosigma.com&format=full' 2>> $ktlog)
 		echo "Token: $token" >> $ktlog
 		kt=$(mktemp -t keytab.XXXXXX)
 		ktlog=/var/log/keytab_refresh.log
