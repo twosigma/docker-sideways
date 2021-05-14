@@ -79,12 +79,13 @@ if [ ! -z "$KEYTAB_SVC_URL" ]; then
 	chown proxy $KRB5_KTNAME
 	chmod 400 $KRB5_KTNAME
 
+	ktlog=/var/log/keytab_refresh.log
+
 	while true; do
-		date >> /var/log/keytab_refresh.log
+		date >> $ktlog
 		token=$(curl -s -H 'Metadata-Flavor: Google' 'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=iam.twosigma.com&format=full' 2>> $ktlog)
 		echo "Token: $token" >> $ktlog
 		kt=$(mktemp -t keytab.XXXXXX)
-		ktlog=/var/log/keytab_refresh.log
 		curl -v -s -o $kt -H "Authorization: Bearer $token" \
 			"$KEYTAB_SVC_URL" >> $ktlog 2>&1
 		if [ $? -ne 0 ]; then
