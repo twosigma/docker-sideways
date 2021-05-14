@@ -42,8 +42,8 @@ if [ ! -z "$MITM_CERT" -a -r "$MITM_CERT" ]; then
 fi
 
 # TODO: Make that configurable
-TRUSTED_CERTS_PATH=/etc/ssl/ts_certs
-/usr/bin/c_rehash $TRUSTED_CERTS_PATH
+cp /etc/ssl/ts_certs/*.pem /etc/ssl/certs/
+/usr/bin/c_rehash /etc/ssl/certs
 
 chown proxy: /dev/stdout
 chown proxy: /dev/stderr
@@ -86,7 +86,6 @@ if [ ! -z "$KEYTAB_SVC_URL" ]; then
 		kt=$(mktemp -t keytab.XXXXXX)
 		ktlog=/var/log/keytab_refresh.log
 		curl -v -s -o $kt -H "Authorization: Bearer $token" \
-			--capath $TRUSTED_CERTS_PATH \
 			"$KEYTAB_SVC_URL" >> $ktlog 2>&1
 		if [ $? -ne 0 ]; then
 			rm $kt
