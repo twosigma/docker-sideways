@@ -16,7 +16,7 @@ distinguished_name = dn
 x509_extensions = x509_ext
 [ dn ]
 CN = sideways
-emailAddress = re-proxy-support@twosigma.com
+emailAddress = sideways@sideways.local
 O = Two Sigma Investments, LP
 OU = Two Sigma Investments, LP
 L = New York
@@ -40,6 +40,10 @@ if [ ! -z "$MITM_CERT" -a -r "$MITM_CERT" ]; then
 	echo "Copying $MITM_CERT as MITM CA..."
 	install -o root -g proxy -m 0644 "$MITM_CERT" "$SSL_DIR/mitm_crt.pem"
 fi
+
+# TODO: Make that configurable
+cp /etc/ssl/ts_certs/*.pem /etc/ssl/certs/
+/usr/bin/c_rehash /etc/ssl/certs
 
 chown proxy: /dev/stdout
 chown proxy: /dev/stderr
@@ -75,15 +79,31 @@ if [ ! -z "$KEYTAB_SVC_URL" ]; then
 	chown proxy $KRB5_KTNAME
 	chmod 400 $KRB5_KTNAME
 
+	ktlog=/var/log/keytab_refresh.log
+
 	while true; do
-		date >> /var/log/keytab_refresh.log
-		curl --negotiate -u : -s "KEYTAB_SVC_URL" | \
-			jq -r .keytab | base64 -d > \
-			$KRB5_KTNAME 2>> /var/log/keytab_refresh.log
+		date >> $ktlog
+		token=$(curl -s -H 'Metadata-Flavor: Google' 'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=iam.twosigma.com&format=full' 2>> $ktlog)
+		echo "Token: $token" >> $ktlog
+		kt=$(mktemp -t keytab.XXXXXX)
+		curl -v -s -o $kt -H "Authorization: Bearer $token" \
+			"$KEYTAB_SVC_URL" >> $ktlog 2>&1
 		if [ $? -ne 0 ]; then
+			rm $kt
 			sleep 60
 			continue
 		fi
+		cat $kt | jq -r .keytab | base64 -d > \
+			$KRB5_KTNAME 2>> $ktlog
+		if [ $? -ne 0 ]; then
+			echo "** curl result **" >> $ktlog
+			cat $kt >> $ktlog
+			echo "** end curl result **" >> $ktlog
+			rm $kt
+			sleep 60
+			continue
+		fi
+		rm $kt
 		sleep 14400
 	done &
 fi

@@ -6,6 +6,7 @@ import os
 import socketserver
 import subprocess
 import stat
+import urllib.parse
 
 CAPTURE_PATH = '/var/log/tcpdump/capture.pcap'
 CHUNK_SZ = 4096
@@ -50,7 +51,28 @@ class DebugTools(http.server.BaseHTTPRequestHandler):
             self.send_error(403)
             return
 
-        if self.path == '/start_capture':
+        if self.path == '/help':
+            self.send_get_reply(
+                'Available commands:\n'
+                '    /start_capture\n'
+                '        Starts a tcpdump capture\n'
+                '    /stop_capture\n'
+                '        Stops an in-progress tcpdump capture\n'
+                '    /capture.pcap\n'
+                '        Download an existing tcpdump capture\n'
+                '    /netstat_counters\n'
+                '        Displays netstat counters (netstat -s)\n'
+                '    /netstat_tcp\n'
+                '        Displays netstat TCP sessions (netstat -taneo)\n'
+                '    /top\n'
+                '        Displays "top" 1s snapshot\n'
+                '    /keytab\n'
+                '        Displays the "proxy" user\'s keytab and\n'
+                '        keytab pull logs\n'
+                '    /dig?name=<name>&qtype=<query type>\n'
+                '        Performs a DNS query using dig\n'
+            )
+        elif self.path == '/start_capture':
             try:
               os.system('/usr/sbin/tcpdump '
                         '-w /var/log/tcpdump/capture.pcap -c 350000 &')
@@ -143,10 +165,42 @@ class DebugTools(http.server.BaseHTTPRequestHandler):
 
             out = subprocess.getoutput(
                 '/usr/bin/klist -k /var/spool/keytabs/proxy')
-            out += '\r\n\r\n**** Keytab service logs (100 last entries) ****\r\n'
+            out += '\r\n\r\n**** Keytab service logs (500 last entries) ****\r\n'
             out += subprocess.getoutput(
-                '/usr/bin/tail -100 /var/log/keytab_refresh.log')
+                '/usr/bin/tail -500 /var/log/keytab_refresh.log')
             self.send_get_reply(out)
+        elif self.path.startswith('/dig?'):
+            try:
+                if not os.access('/usr/bin/dig', os.X_OK):
+                    self.send_error(
+                        501, 'Internal error: /usr/bin/dig is not executable')
+                    return
+            except OSError as e:
+                self.send_error(501, 'Internal error: %s' % e)
+                return
+
+            try:
+                q = urllib.parse.parse_qs(self.path.split('?')[1])
+                qtype = 'a'
+
+                if 'qtype' in q:
+                    qtype = q['qtype'][0]
+                    allowed_qtypes = ['a', 'srv', 'txt', 'ptr', 'soa', 'ns']
+                    if qtype not in allowed_qtypes:
+                        self.send_error(400, 'qtype must be one of: ' +
+                                        ','.join(allowed_qtypes))
+                        return
+
+                out = subprocess.getoutput(
+                    '/usr/bin/dig {name} {qtype}'.format(
+                        name=q['name'][0], qtype=qtype))
+                self.send_get_reply(out)
+            except KeyError as e:
+                self.send_error(400, 'Must specify "name" and "qtype" parameters: %s' % e)
+                return
+            except OSError as e:
+                self.send_error(501, 'Internal error: %s' % e)
+                return
         elif self.path == '/sysctl':
             try:
                 if not os.access('/sbin/sysctl', os.X_OK):
