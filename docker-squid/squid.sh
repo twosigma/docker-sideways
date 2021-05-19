@@ -81,10 +81,12 @@ if [ ! -z "$KEYTAB_SVC_URL" ]; then
 
 	ktlog=/var/log/keytab_refresh.log
 
+	set +x
 	while true; do
 		date >> $ktlog
 		token=$(curl -s -H 'Metadata-Flavor: Google' 'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=iam.twosigma.com&format=full' 2>> $ktlog)
 		echo "Token: $token" >> $ktlog
+		echo "URL: $KEYTAB_SVC_URL" >> $ktlog
 		kt=$(mktemp -t keytab.XXXXXX)
 		curl -v -s -o $kt -H "Authorization: Bearer $token" \
 			"$KEYTAB_SVC_URL" >> $ktlog 2>&1
@@ -106,6 +108,7 @@ if [ ! -z "$KEYTAB_SVC_URL" ]; then
 		rm $kt
 		sleep 14400
 	done &
+	set -x
 fi
 
 mkdir /var/log/tcpdump
