@@ -1,5 +1,7 @@
 #!/bin/bash -x
 
+set -o pipefail
+
 SSL_DIR=/etc/squid/ssl
 
 install -d -o root -g proxy -m 0755 "$SSL_DIR"
