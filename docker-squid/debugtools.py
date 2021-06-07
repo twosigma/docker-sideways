@@ -68,6 +68,10 @@ class DebugTools(http.server.BaseHTTPRequestHandler):
                 '        Displays "top" 1s snapshot\n'
                 '    /squid_config\n'
                 '        Displays concatenated squid configuration\n'
+                '    /squid_debug\n'
+                '        Toggle full debugging\n'
+                '    /cache_log?max_lines=<n>\n'
+                '        Displays Squid\'s cache.log, with max_lines option\n'
                 '    /sysctl\n'
                 '        Displays current sysctl settings\n'
                 '    /keytab\n'
@@ -216,6 +220,9 @@ class DebugTools(http.server.BaseHTTPRequestHandler):
                 return
 
             self.send_get_reply(subprocess.getoutput('/sbin/sysctl -a'))
+        elif self.path == '/squid_debug':
+            self.send_get_reply(subprocess.getoutput(
+                '/usr/local/sbin/squid -k debug'))
         elif self.path == '/squid_config':
 
             body = '**** /etc/squid/squid.conf ****\r\n'
@@ -232,6 +239,29 @@ class DebugTools(http.server.BaseHTTPRequestHandler):
                 return
 
             self.send_get_reply(body)
+        elif self.path.startswith('/cache_log'):
+            try:
+                max_lines = 500
+                try:
+                    q = urllib.parse.parse_qs(self.path.split('?')[1])
+                    if 'max_lines' in q:
+                        max_lines = int(q['max_lines'][0])
+                        if max_lines < 0:
+                            self.send_error(400,
+                                            'Bad parameter: max_lines '
+                                            'must be positive')
+                            return
+                except IndexError as e:
+                    pass
+
+                out = subprocess.getoutput(
+                    '/usr/bin/tail -%d /var/log/squid/cache.log' % max_lines)
+                self.send_get_reply(out)
+            except ValueError as e:
+                self.send_error(400, 'Bad parameter: %s' % e)
+            except OSError as e:
+                self.send_error(501, 'Internal error: %s' % e)
+                return
         else:
             self.log_message('GET request on %s', self.path)
             self.send_error(404)
