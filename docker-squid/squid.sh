@@ -1,7 +1,5 @@
 #!/bin/bash -x
 
-set -o pipefail
-
 SSL_DIR=/etc/squid/ssl
 
 install -d -o root -g proxy -m 0755 "$SSL_DIR"
@@ -74,49 +72,6 @@ mkdir -p /etc/squid/hooks.d
 for hook in $(find /etc/squid/hooks.d/ -type f -executable); do
 	$hook &
 done
-
-# TODO: move to a more generic hook script
-if [ ! -z "$KEYTAB_SVC_URL" ]; then
-	export KRB5_KTNAME=/var/spool/keytabs/proxy
-	mkdir -p /var/spool/keytabs
-	touch $KRB5_KTNAME
-	chown proxy $KRB5_KTNAME
-	chmod 400 $KRB5_KTNAME
-
-	ktlog=/var/log/keytab_refresh.log
-
-	set +x
-	while true; do
-		date >> $ktlog
-		token=$(curl -s -H 'Metadata-Flavor: Google' 'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=iam.twosigma.com&format=full' 2>> $ktlog)
-		echo "Token: $token" >> $ktlog
-		echo "URL: $KEYTAB_SVC_URL" >> $ktlog
-		kt=$(mktemp -t keytab.XXXXXX)
-		curl -v -s -o $kt -H "Authorization: Bearer $token" \
-			"$KEYTAB_SVC_URL" >> $ktlog 2>&1
-		if [ $? -ne 0 ]; then
-			rm $kt
-			sleep 60
-			continue
-		fi
-		cat $kt | jq -r .keytab | base64 -d > \
-			$KRB5_KTNAME 2>> $ktlog
-		if [ $? -ne 0 ]; then
-			echo "** curl result **" >> $ktlog
-			cat $kt >> $ktlog
-			echo "** end curl result **" >> $ktlog
-			rm $kt
-			sleep 60
-			continue
-		fi
-		rm $kt
-		sleep 14400
-	done &
-	set -x
-fi
-
-# TODO: Move to a hook script
-python3 /debugtools.py 2>&1 &
 
 # Create any required cache dirs
 squid -z -N
