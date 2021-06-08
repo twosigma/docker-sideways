@@ -82,6 +82,14 @@ class DebugTools(http.server.BaseHTTPRequestHandler):
             )
         elif self.path == '/start_capture':
             try:
+                os.mkdir('/var/log/tcpdump', 0o700)
+            except OSError as e:
+                self.send_error(501, 'Internal error: %s' % e)
+                return
+            except FileExistsError:
+                pass
+
+            try:
               os.system('/usr/sbin/tcpdump '
                         '-w /var/log/tcpdump/capture.pcap -c 350000 &')
             except OSError as e:

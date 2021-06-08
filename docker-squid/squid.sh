@@ -6,8 +6,8 @@ SSL_DIR=/etc/squid/ssl
 
 install -d -o root -g proxy -m 0755 "$SSL_DIR"
 
-# This obviously won't verify successfully. This is
-# just so we can do a POC with a self-signed cert.
+# This obviously won't verify successfully. This is just so we can do a POC
+# with a self-signed cert and run the docker image standalone without errors.
 cat > "$SSL_DIR/mitm.conf" << EOF
 [ req ]
 default_bits = 2048
@@ -43,7 +43,8 @@ if [ ! -z "$MITM_CERT" -a -r "$MITM_CERT" ]; then
 	install -o root -g proxy -m 0644 "$MITM_CERT" "$SSL_DIR/mitm_crt.pem"
 fi
 
-# TODO: Make that configurable
+# We can mount additional certs in /etc/ssl/ts_certs, which we
+# can then add to our main CA path.
 cp /etc/ssl/ts_certs/*.pem /etc/ssl/certs/
 /usr/bin/c_rehash /etc/ssl/certs
 
@@ -56,24 +57,25 @@ chown -R proxy:proxy /var/spool/squid/ssl_db
 
 mkdir -p /etc/squid/conf.d
 
-# Only grant debug tools access by default. This will be replaced
-# by helm at startup.
+# Deny all by default. This should be replaced at startup by Helm, for instance.
 if [ ! -f /etc/squid/conf.d/acls.conf ]; then
 	touch /etc/squid/conf.d/acls.conf
 	cat << EOF > /etc/squid/conf.d/acls.conf
-acl me src 127.0.0.1/32
-acl CONNECT method CONNECT
-acl debugtools dstdomain localhost
-acl debugtools_port port 8081
-
-http_access allow all CONNECT debugtools debugtools_port
-http_access allow all !debugtools
 http_access deny all
 EOF
 fi
 
 chown proxy:proxy /var/log/squid
 
+# Run any hook script deployed for squid; hooks can keep running in the
+# background and will be sent a SIGTERM when squid exits (see at the end of this
+# startup script).
+mkdir -p /etc/squid/hooks.d
+for hook in $(find /etc/squid/hooks.d/ -type f -executable); do
+	$hook &
+done
+
+# TODO: move to a more generic hook script
 if [ ! -z "$KEYTAB_SVC_URL" ]; then
 	export KRB5_KTNAME=/var/spool/keytabs/proxy
 	mkdir -p /var/spool/keytabs
@@ -113,14 +115,13 @@ if [ ! -z "$KEYTAB_SVC_URL" ]; then
 	set -x
 fi
 
-mkdir /var/log/tcpdump
-
+# TODO: Move to a hook script
 python3 /debugtools.py 2>&1 &
 
 # Create any required cache dirs
 squid -z -N
 
-# Start squid normally
+# Start squid
 squid -N 2>&1 &
 PID=$!
 
