@@ -72,7 +72,6 @@ RUN cd /usr/local/src/squid && \
 
 COPY squid.sh /squid.sh
 COPY squid.conf /etc/squid/squid.conf
-COPY debugtools.py /debugtools.py
 
 EXPOSE 3128
 
