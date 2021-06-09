@@ -17,8 +17,8 @@ x509_extensions = x509_ext
 [ dn ]
 CN = sideways
 emailAddress = sideways@sideways.local
-O = Two Sigma Investments, LP
-OU = Two Sigma Investments, LP
+O = Sideways
+OU = Sideways
 L = New York
 ST = New York
 C = US
@@ -43,8 +43,10 @@ fi
 
 # We can mount additional certs in /etc/ssl/ts_certs, which we
 # can then add to our main CA path.
-cp /etc/ssl/ts_certs/*.pem /etc/ssl/certs/
-/usr/bin/c_rehash /etc/ssl/certs
+if [ -d /etc/ssl/ts_certs ]; then
+	find /etc/ssl/certs/ -name '*.pem' -exec cp {} /etc/ssl/certs/ \;
+	/usr/bin/c_rehash /etc/ssl/certs
+fi
 
 chown proxy: /dev/stdout
 chown proxy: /dev/stderr
