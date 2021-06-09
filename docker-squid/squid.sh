@@ -41,10 +41,10 @@ if [ ! -z "$MITM_CERT" -a -r "$MITM_CERT" ]; then
 	install -o root -g proxy -m 0644 "$MITM_CERT" "$SSL_DIR/mitm_crt.pem"
 fi
 
-# We can mount additional certs in /etc/ssl/ts_certs, which we
+# We can mount additional certs in /etc/ssl/extra_certs, which we
 # can then add to our main CA path.
-if [ -d /etc/ssl/ts_certs ]; then
-	find /etc/ssl/certs/ -name '*.pem' -exec cp {} /etc/ssl/certs/ \;
+if [ -d /etc/ssl/extra_certs ]; then
+	find /etc/ssl/extra_certs/ -name '*.pem' -exec cp {} /etc/ssl/certs/ \;
 	/usr/bin/c_rehash /etc/ssl/certs
 fi
 
