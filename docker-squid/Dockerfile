@@ -1,6 +1,7 @@
 FROM debian:buster
 
 ENV SQUID_VERSION=4.15
+ENV GOPATH=/usr/local/src/go
 
 # Normalize apt sources
 RUN cat /etc/apt/sources.list | grep -v '^#' | sed /^$/d | sort | uniq > sources.tmp.1 && \
@@ -11,7 +12,7 @@ RUN cat /etc/apt/sources.list | grep -v '^#' | sed /^$/d | sort | uniq > sources
 RUN apt-get update && \
 	DEBIAN_FRONTEND=noninteractive apt-get build-dep -y squid && \
 	DEBIAN_FRONTEND=noninteractive apt-get -y install \
-		curl dnsutils gnupg iproute2 jq krb5-user \
+		curl dnsutils gnupg golang iproute2 jq krb5-user \
 		libssl-dev nghttp2-proxy net-tools openssl procps \
 		python3 python3-gssapi \
 		python3-kerberos strace tar tcpdump vim
@@ -72,6 +73,12 @@ RUN cd /usr/local/src/squid && \
 
 COPY squid.sh /squid.sh
 COPY squid.conf /etc/squid/squid.conf
+COPY icapd.go /usr/local/src/icapd.go
+
+RUN cd /usr/local/src && \
+	go get github.com/go-icap/icap && \
+	go build icapd.go && \
+	install -o root -g root -m 0755 icapd /usr/local/bin/icapd
 
 EXPOSE 3128
 
