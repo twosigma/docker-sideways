@@ -83,7 +83,6 @@ func httpError(w icap.ResponseWriter, code int, body string, args ...interface{}
 
 func analyzeReq(req *icap.Request) (*httpValues, error) {
 	buf := make([]byte, 4096)
-	rd := io.LimitReader(req.Request.Body, 4096)
 
 	v := &httpValues{
 		method: req.Request.Method,
@@ -92,11 +91,13 @@ func analyzeReq(req *icap.Request) (*httpValues, error) {
 	}
 
 	for {
-		n, err := rd.Read(buf)
+		n, err := req.Request.Body.Read(buf)
+		vout("read chunk; n = %d", n)
 		if err != nil {
 			if err != io.EOF {
 				return nil, err
 			}
+			log.Printf("uh? %v", err)
 			break
 		}
 		v.fullSize += uint64(n)
@@ -137,7 +138,7 @@ func reqmodCheck(w icap.ResponseWriter, req *icap.Request) {
 				log.Fatal("value for 'size' attribute is not integer")
 			}
 			if v.fullSize > uint64(sz) {
-				httpError(w, 403, "payload larger than %d bytes", sz)
+				httpError(w, 403, "payload larger than %d bytes: %d", sz, v.fullSize)
 				return
 			}
 		default:
