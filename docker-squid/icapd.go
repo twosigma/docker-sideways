@@ -13,6 +13,7 @@ import (
 	"os/user"
 	"strconv"
 	"syscall"
+	"time"
 )
 
 var (
@@ -67,11 +68,13 @@ func httpError(w icap.ResponseWriter, code int, body string, args ...interface{}
 		ContentLength: int64(len(body)),
 	}
 	resp.Header.Set("Content-Type", "text/html")
+	msg := fmt.Sprintf(body, args...)
+	vout("httpError: %d %s (%s)", code, status, msg)
 	if len(body) == 0 {
-		w.WriteHeader(403, resp, false)
+		w.WriteHeader(200, resp, false)
 	} else {
-		w.WriteHeader(403, resp, true)
-		b := []byte(fmt.Sprintf(body, args...))
+		w.WriteHeader(200, resp, true)
+		b := []byte(msg)
 		if _, err := w.Write(b); err != nil {
 			log.Printf("httpError: write: %v", err)
 		}
@@ -104,12 +107,25 @@ func analyzeReq(req *icap.Request) (*httpValues, error) {
 
 func reqmodCheck(w icap.ResponseWriter, req *icap.Request) {
 	vout("analyzing...")
+
+	start := time.Now()
 	v, err := analyzeReq(req)
+	end := time.Now()
+	elapsed := end.Sub(start)
+
 	if err != nil {
 		httpError(w, 500, fmt.Sprintf("analyzeReq: %v", err))
 		return
 	}
+	vout("analysis complete; %v elapsed", elapsed)
 
+	vout("evaluating rules...")
+	start = time.Now()
+	defer func() {
+		end = time.Now()
+		elapsed = end.Sub(start)
+		vout("rule evaluation complete; %v elapsed", elapsed)
+	}()
 	for _, a := range acls {
 		switch a.Attr {
 		case "size":
@@ -121,7 +137,7 @@ func reqmodCheck(w icap.ResponseWriter, req *icap.Request) {
 				log.Fatal("value for 'size' attribute is not integer")
 			}
 			if v.fullSize > uint64(sz) {
-				httpError(w, 403, "payload larger than %d bytes: %d", sz, v.fullSize)
+				httpError(w, 403, "payload larger than %d bytes", sz)
 				return
 			}
 		default:
