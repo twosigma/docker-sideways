@@ -10,7 +10,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os/user"
 	"strconv"
+	"syscall"
 )
 
 var (
@@ -18,6 +20,8 @@ var (
 	istag = flag.String("istag", "SIDEWAYS-ICAP", "ICAP ISTag value")
 	verbose = flag.Bool("verbose", false, "Be more verbose")
 	cfg = flag.String("cfg", "/etc/icapd.conf", "ICAP JSON configuration")
+	uid = flag.String("uid", "proxy", "Running UID")
+	gid = flag.String("gid", "proxy", "Running GID")
 )
 
 var acls []AclSpec
@@ -163,6 +167,30 @@ func main() {
 	}
 
 	vout("acls: %v", acls)
+
+	g, err := user.LookupGroup(*gid)
+	if err != nil {
+		log.Fatalf("user.LookupGroup: %v", err)
+	}
+	u, err := user.Lookup(*uid)
+	if err != nil {
+		log.Fatalf("user.Lookup: %v", err)
+	}
+
+	n, err := strconv.Atoi(g.Gid)
+	if err != nil {
+		log.Fatalf("bad GID conversion: %v", err)
+	}
+	if err := syscall.Setregid(n, n); err != nil {
+		log.Fatalf("syscall.Setegid: %v", err)
+	}
+	n, err = strconv.Atoi(u.Uid)
+	if err != nil {
+		log.Fatalf("bad GID conversion: %v", err)
+	}
+	if err := syscall.Setreuid(n, n); err != nil {
+		log.Fatalf("syscall.Seteuid: %v", err)
+	}
 
 	icap.HandleFunc("/acl", aclCheck)
 	icap.ListenAndServe(fmt.Sprintf(":%d", *port), icap.HandlerFunc(aclCheck))
