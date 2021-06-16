@@ -12,7 +12,7 @@ RUN cat /etc/apt/sources.list | grep -v '^#' | sed /^$/d | sort | uniq > sources
 RUN apt-get update && \
 	DEBIAN_FRONTEND=noninteractive apt-get build-dep -y squid && \
 	DEBIAN_FRONTEND=noninteractive apt-get -y install \
-		curl dnsutils gnupg golang iproute2 jq krb5-user \
+		curl dnsutils git gnupg golang iproute2 jq krb5-user \
 		libssl-dev nghttp2-proxy net-tools openssl procps \
 		python3 python3-gssapi \
 		python3-kerberos strace tar tcpdump vim
