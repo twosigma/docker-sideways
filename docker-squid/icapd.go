@@ -37,6 +37,7 @@ type AclSpec struct {
 	Attr string
 	Verb string
 	Value string
+	Comment string
 }
 
 func vout(f string, args ...interface{}) {
@@ -97,7 +98,6 @@ func analyzeReq(req *icap.Request) (*httpValues, error) {
 			if err != io.EOF {
 				return nil, err
 			}
-			log.Printf("uh? %v", err)
 			break
 		}
 		v.fullSize += uint64(n)
@@ -127,6 +127,8 @@ func reqmodCheck(w icap.ResponseWriter, req *icap.Request) {
 		elapsed = end.Sub(start)
 		vout("rule evaluation complete; %v elapsed", elapsed)
 	}()
+	// TODO: obviously that's just a POC. We'll probably want at some
+	// point to support logical expressions on various fields.
 	for _, a := range acls {
 		switch a.Attr {
 		case "size":
