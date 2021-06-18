@@ -17,27 +17,167 @@ import (
 )
 
 var (
-	port = flag.Int("port", 1344, "ICAP listen port")
-	istag = flag.String("istag", "SIDEWAYS-ICAP", "ICAP ISTag value")
+	port    = flag.Int("port", 1344, "ICAP listen port")
+	istag   = flag.String("istag", "SIDEWAYS-ICAP", "ICAP ISTag value")
 	verbose = flag.Bool("verbose", false, "Be more verbose")
-	cfg = flag.String("cfg", "/etc/icapd.conf", "ICAP JSON configuration")
-	uid = flag.String("uid", "proxy", "Running UID")
-	gid = flag.String("gid", "proxy", "Running GID")
+	cfg     = flag.String("cfg", "/etc/icapd.conf", "ICAP JSON configuration")
+	uid     = flag.String("uid", "", "Running UID")
+	gid     = flag.String("gid", "", "Running GID")
+	check   = flag.Bool("check", false, "Check config syntax and exit")
 )
-
-var acls []AclSpec
 
 type httpValues struct {
 	fullSize uint64
-	method string
+	method   string
+	host     string
+}
+
+var acl []ruleSpec
+
+type ruleSpec struct {
+	rule rule
+}
+
+func (rs *ruleSpec) UnmarshalJSON(b []byte) error {
+	var j map[string]*json.RawMessage
+	if err := json.Unmarshal(b, &j); err != nil {
+		return err
+	}
+	for k, v := range j {
+		switch k {
+		case "allow":
+			var ar allowRule
+			if err := json.Unmarshal([]byte(*v), &ar); err != nil {
+				return err
+			}
+			rs.rule = ar
+		case "deny":
+			var dr denyRule
+			if err := json.Unmarshal([]byte(*v), &dr); err != nil {
+				return err
+			}
+			rs.rule = dr
+		default:
+			return fmt.Errorf("unknown rule '%s'", k)
+		}
+	}
+	return nil
+}
+
+func (rs *ruleSpec) Eval(w icap.ResponseWriter, v *httpValues) (bool, error) {
+	var conditions []conditionSpec
+	switch rs.rule.(type) {
+	case allowRule:
+		conditions = rs.rule.(allowRule).Conditions
+	case denyRule:
+		conditions = rs.rule.(denyRule).Conditions
+	}
+
+	for _, cond := range conditions {
+		vout("Condition: %v\n", cond)
+		match, err := cond.condition.Eval(v)
+		if err != nil {
+			log.Printf("reqmodCheck: error: %v", err)
+			return false, httpError(w, 500, "reqmodCheck: error: %v", err)
+		}
+		if !match {
+			return false, nil
+		}
+	}
+	return true, rs.rule.Execute(w)
+}
+
+type rule interface {
+	Execute(w icap.ResponseWriter) error
+}
+
+type allowRule struct {
+	Conditions []conditionSpec `json:"conditions"`
+	Comment    string          `json:"comment,omitempty"`
+}
+
+func (r allowRule) Execute(w icap.ResponseWriter) error {
+	w.WriteHeader(204, nil, false)
+	return nil
+}
+
+type denyRule struct {
+	Conditions []conditionSpec `json:"conditions"`
+	HttpCode   int             `json:"http_code,omitempty"`
+	Body       string          `json:"body,omitempty"`
+	Comment    string          `json:"comment,omitempty"`
+}
+
+func (r denyRule) Execute(w icap.ResponseWriter) error {
+	code := 403
+	if r.HttpCode != 0 {
+		code = r.HttpCode
+	}
+	return httpError(w, code, r.Body)
+}
+
+type conditionSpec struct {
+	condition condition
+}
+
+func (cs *conditionSpec) UnmarshalJSON(b []byte) error {
+	var j map[string]*json.RawMessage
+	if err := json.Unmarshal(b, &j); err != nil {
+		return err
+	}
+	for k, v := range j {
+		switch k {
+		case "host":
+			var c hostCondition
+			if err := json.Unmarshal([]byte(*v), &c.host); err != nil {
+				return err
+			}
+			cs.condition = c
+		case "body_size_gt":
+			var c bodySizeGtCondition
+			if err := json.Unmarshal([]byte(*v), &c.size); err != nil {
+				return err
+			}
+			cs.condition = c
+		case "body_size_lt":
+			var c bodySizeLtCondition
+			if err := json.Unmarshal([]byte(*v), &c.size); err != nil {
+				return err
+			}
+			cs.condition = c
+		default:
+			return fmt.Errorf("unknown condition '%s'", k)
+		}
+	}
+	return nil
+}
+
+type condition interface {
+	Eval(v *httpValues) (bool, error)
+}
+
+type hostCondition struct {
 	host string
 }
 
-type AclSpec struct {
-	Attr string
-	Verb string
-	Value string
-	Comment string
+func (c hostCondition) Eval(v *httpValues) (bool, error) {
+	return c.host == v.host, nil
+}
+
+type bodySizeGtCondition struct {
+	size uint64
+}
+
+func (c bodySizeGtCondition) Eval(v *httpValues) (bool, error) {
+	return v.fullSize > c.size, nil
+}
+
+type bodySizeLtCondition struct {
+	size uint64
+}
+
+func (c bodySizeLtCondition) Eval(v *httpValues) (bool, error) {
+	return v.fullSize < c.size, nil
 }
 
 func vout(f string, args ...interface{}) {
@@ -46,26 +186,28 @@ func vout(f string, args ...interface{}) {
 	}
 }
 
-func httpError(w icap.ResponseWriter, code int, body string, args ...interface{}) {
+func httpError(w icap.ResponseWriter, code int, body string, args ...interface{}) error {
 	var status string
 	switch code {
 	case 403:
 		status = "Forbidden"
+	case 413:
+		status = "Payload Too large"
 	case 500:
 		status = "Internal error"
 	default:
-		code = 500
 		status = "Internal error"
-		body = "Undefined error code"
+		body = fmt.Sprintf("Unhandled error code %d", code)
+		code = 500
 	}
 
 	resp := &http.Response{
-		Status: status,
-		StatusCode: code,
-		Proto: "HTTP/1.1",
-		ProtoMajor: 1,
-		ProtoMinor: 1,
-		Header: make(http.Header, 0),
+		Status:        status,
+		StatusCode:    code,
+		Proto:         "HTTP/1.1",
+		ProtoMajor:    1,
+		ProtoMinor:    1,
+		Header:        make(http.Header, 0),
 		ContentLength: int64(len(body)),
 	}
 	resp.Header.Set("Content-Type", "text/html")
@@ -77,17 +219,18 @@ func httpError(w icap.ResponseWriter, code int, body string, args ...interface{}
 		w.WriteHeader(200, resp, true)
 		b := []byte(msg)
 		if _, err := w.Write(b); err != nil {
-			log.Printf("httpError: write: %v", err)
+			return fmt.Errorf("httpError: Write: %v", err)
 		}
 	}
+	return nil
 }
 
 func analyzeReq(req *icap.Request) (*httpValues, error) {
 	buf := make([]byte, 4096)
 
 	v := &httpValues{
-		method: req.Request.Method,
-		host: req.Request.Host,
+		method:   req.Request.Method,
+		host:     req.Request.Host,
 		fullSize: 0,
 	}
 
@@ -114,6 +257,8 @@ func reqmodCheck(w icap.ResponseWriter, req *icap.Request) {
 	end := time.Now()
 	elapsed := end.Sub(start)
 
+	vout("httpValues: %v", v)
+
 	if err != nil {
 		httpError(w, 500, fmt.Sprintf("analyzeReq: %v", err))
 		return
@@ -127,27 +272,20 @@ func reqmodCheck(w icap.ResponseWriter, req *icap.Request) {
 		elapsed = end.Sub(start)
 		vout("rule evaluation complete; %v elapsed", elapsed)
 	}()
-	// TODO: obviously that's just a POC. We'll probably want at some
-	// point to support logical expressions on various fields.
-	for _, a := range acls {
-		switch a.Attr {
-		case "size":
-			if a.Verb != ">" {
-				log.Fatalf("unsupported verb %s for attribute 'size'", a.Verb)
-			}
-			sz, err := strconv.ParseInt(a.Value, 10, 64)
-			if err != nil {
-				log.Fatal("value for 'size' attribute is not integer")
-			}
-			if v.fullSize > uint64(sz) {
-				httpError(w, 403, "payload larger than %d bytes: %d", sz, v.fullSize)
-				return
-			}
-		default:
-			log.Fatalf("unknown attribute %s", a.Attr)
+
+	for _, rule := range acl {
+		fmt.Printf("Rule: %v\n", rule)
+		match, err := rule.Eval(w, v)
+		if err != nil {
+			log.Printf("reqmodCheck: %v", err)
+			return
+		}
+		if match {
+			return
 		}
 	}
 
+	// If no rules match, we allow.
 	w.WriteHeader(204, nil, false)
 }
 
@@ -181,34 +319,41 @@ func main() {
 		log.Fatalf("cfg: %v", err)
 	}
 
-	if err := json.Unmarshal(data, &acls); err != nil {
+	if err := json.Unmarshal(data, &acl); err != nil {
 		log.Fatalf("json: %v", err)
 	}
 
-	vout("acls: %v", acls)
+	vout("acl: %v", acl)
 
-	g, err := user.LookupGroup(*gid)
-	if err != nil {
-		log.Fatalf("user.LookupGroup: %v", err)
-	}
-	u, err := user.Lookup(*uid)
-	if err != nil {
-		log.Fatalf("user.Lookup: %v", err)
+	if *check {
+		return
 	}
 
-	n, err := strconv.Atoi(g.Gid)
-	if err != nil {
-		log.Fatalf("bad GID conversion: %v", err)
+	if *gid != "" {
+		g, err := user.LookupGroup(*gid)
+		if err != nil {
+			log.Fatalf("user.LookupGroup: %v", err)
+		}
+		n, err := strconv.Atoi(g.Gid)
+		if err != nil {
+			log.Fatalf("bad GID conversion: %v", err)
+		}
+		if err := syscall.Setregid(n, n); err != nil {
+			log.Fatalf("syscall.Setegid: %v", err)
+		}
 	}
-	if err := syscall.Setregid(n, n); err != nil {
-		log.Fatalf("syscall.Setegid: %v", err)
-	}
-	n, err = strconv.Atoi(u.Uid)
-	if err != nil {
-		log.Fatalf("bad GID conversion: %v", err)
-	}
-	if err := syscall.Setreuid(n, n); err != nil {
-		log.Fatalf("syscall.Seteuid: %v", err)
+	if *uid != "" {
+		u, err := user.Lookup(*uid)
+		if err != nil {
+			log.Fatalf("user.Lookup: %v", err)
+		}
+		n, err := strconv.Atoi(u.Uid)
+		if err != nil {
+			log.Fatalf("bad GID conversion: %v", err)
+		}
+		if err := syscall.Setreuid(n, n); err != nil {
+			log.Fatalf("syscall.Seteuid: %v", err)
+		}
 	}
 
 	icap.HandleFunc("/acl", aclCheck)
