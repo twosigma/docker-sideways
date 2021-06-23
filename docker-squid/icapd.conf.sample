@@ -1,0 +1,19 @@
+[{
+	"deny": {
+		"conditions": [
+			{ "host": "small-payloads-only.example.com" },
+			{ "body_size_gt": 5000 }
+		],
+		"http_code": 413,
+		"body": "Request body exceeds limit of 5000 bytes",
+		"comment": "Internal documentation link, or else ..."
+	}
+},
+{
+	"allow": { 
+		"conditions": [ { "host": "small-payloads-only.example.com" } ]
+	}
+},
+{
+	"deny": { "conditions": [] }
+}]
