@@ -274,7 +274,6 @@ func reqmodCheck(w icap.ResponseWriter, req *icap.Request) {
 	}()
 
 	for _, rule := range acl {
-		fmt.Printf("Rule: %v\n", rule)
 		match, err := rule.Eval(w, v)
 		if err != nil {
 			log.Printf("reqmodCheck: %v", err)
