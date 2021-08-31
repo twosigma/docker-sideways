@@ -9,7 +9,7 @@ RUN apt-get update && \
 COPY httpmirror.go /usr/local/src/httpmirror.go
 RUN cd /usr/local/src && \
 	go build httpmirror.go && \
-	install -o root -g root -m 0755 icapd /usr/local/bin/httpmirror
+	install -o root -g root -m 0755 httpmirror /usr/local/bin/httpmirror
 
 RUN mkdir /etc/httpmirror && \
 	cd /etc/httpmirror \
