@@ -17,8 +17,8 @@ var (
 	http_addr  = flag.String("http_addr", ":8080", "HTTP listen address")
 	https_addr = flag.String("https_addr", ":8443", "HTTPS listen address")
 	ca         = flag.String("ca", "/etc/ssl/certs/ca-certificates.crt", "CA certificates file")
-	crt        = flag.String("crt", "cert.pem", "Server certificate")
-	key        = flag.String("key", "key.pem", "Server key")
+	crt        = flag.String("crt", "/etc/httpmirror/crt.pem", "Server certificate")
+	key        = flag.String("key", "/etc/httpmirror/key.pem", "Server key")
 	allow      = flag.String("allow", "127.0.0.1/32,::1/128", "Comma-separated list of allowed subnets")
 )
 
