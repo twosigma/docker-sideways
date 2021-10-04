@@ -1,6 +1,6 @@
-FROM debian:buster
+FROM debian:bullseye
 
-ENV SQUID_VERSION=4.15
+ENV SQUID_VERSION=5.1
 ENV GOPATH=/usr/local/src/go
 
 # Normalize apt sources
@@ -17,8 +17,8 @@ RUN apt-get update && \
 		python3 python3-gssapi \
 		python3-kerberos strace tar tcpdump vim
 
-ADD http://www.squid-cache.org/Versions/v4/squid-$SQUID_VERSION.tar.gz /usr/local/src/
-ADD http://www.squid-cache.org/Versions/v4/squid-$SQUID_VERSION.tar.gz.asc /usr/local/src/
+ADD http://www.squid-cache.org/Versions/v5/squid-$SQUID_VERSION.tar.gz /usr/local/src/
+ADD http://www.squid-cache.org/Versions/v5/squid-$SQUID_VERSION.tar.gz.asc /usr/local/src/
 
 COPY squid.asc /usr/local/src/squid.asc
 RUN gpg --import /usr/local/src/squid.asc && \
