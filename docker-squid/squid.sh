@@ -83,6 +83,7 @@ squid -N 2>&1 &
 PID=$!
 
 # This construct allows signals to kill the container successfully.
+jobs -l
 children=$(echo `jobs -p`)
 trap "kill -TERM $children" INT TERM
 
