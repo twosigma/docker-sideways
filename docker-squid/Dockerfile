@@ -1,6 +1,6 @@
 FROM debian:bullseye
 
-ENV SQUID_VERSION=5.1
+ENV SQUID_VERSION=5.3
 ENV GOPATH=/usr/local/src/go
 
 # Normalize apt sources
